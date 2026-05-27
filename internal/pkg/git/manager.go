@@ -3,7 +3,9 @@ package git
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -270,6 +272,7 @@ func (m *Manager) FileExistsAtSHA(ctx context.Context, projectID int64, sha, fil
 }
 
 func (m *Manager) ensureFullClone(ctx context.Context, repoPath, cloneURL string) (bool, error) {
+	cloneURL = m.authCloneURL(cloneURL)
 	reason := repoRecloneReason(repoPath)
 	if reason == "" {
 		return false, nil
@@ -562,6 +565,23 @@ func (m *Manager) goGitAuth() *githttp.BasicAuth {
 	}
 }
 
+func (m *Manager) authCloneURL(cloneURL string) string {
+	if m.gitlabToken == "" {
+		return cloneURL
+	}
+	u, err := url.Parse(cloneURL)
+	if err != nil || u.Scheme != "https" {
+		return cloneURL
+	}
+	u.User = url.UserPassword("oauth2", m.gitlabToken)
+	return u.String()
+}
+
+func gitBasicAuthHeader(username, password string) string {
+	creds := username + ":" + password
+	return "Authorization: Basic " + base64.StdEncoding.EncodeToString([]byte(creds))
+}
+
 // GitEnv returns environment variables for git commands that inject the GitLab
 // token, http buffer, and HTTP/1.1 settings via GIT_CONFIG environment variables.
 func (m *Manager) GitEnv() []string {
@@ -581,7 +601,7 @@ func (m *Manager) GitEnv() []string {
 	return append(os.Environ(),
 		"GIT_CONFIG_COUNT=5",
 		"GIT_CONFIG_KEY_0=http.extraHeader",
-		fmt.Sprintf("GIT_CONFIG_VALUE_0=PRIVATE-TOKEN: %s", m.gitlabToken),
+		fmt.Sprintf("GIT_CONFIG_VALUE_0=%s", gitBasicAuthHeader("oauth2", m.gitlabToken)),
 		"GIT_CONFIG_KEY_1=http.postBuffer",
 		"GIT_CONFIG_VALUE_1=524288000",
 		"GIT_CONFIG_KEY_2=http.version",

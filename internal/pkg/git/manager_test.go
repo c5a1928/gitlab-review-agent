@@ -6,6 +6,40 @@ import (
 	"testing"
 )
 
+func TestAuthCloneURL(t *testing.T) {
+	t.Parallel()
+
+	m := NewManager("/tmp/repos", "https://plydot.dev", "glpat-test-token")
+
+	got := m.authCloneURL("https://plydot.dev/group/project.git")
+	want := "https://oauth2:glpat-test-token@plydot.dev/group/project.git"
+	if got != want {
+		t.Fatalf("authCloneURL() = %q, want %q", got, want)
+	}
+
+	empty := NewManager("/tmp/repos", "https://plydot.dev", "")
+	if got := empty.authCloneURL("https://plydot.dev/group/project.git"); got != "https://plydot.dev/group/project.git" {
+		t.Fatalf("authCloneURL() without token = %q", got)
+	}
+}
+
+func TestGitEnvUsesBasicAuth(t *testing.T) {
+	t.Parallel()
+
+	m := NewManager("/tmp/repos", "https://plydot.dev", "secret-token")
+	env := m.GitEnv()
+
+	var headerValue string
+	for _, entry := range env {
+		if entry == "GIT_CONFIG_VALUE_0=Authorization: Basic b2F1dGgyOnNlY3JldC10b2tlbg==" {
+			headerValue = entry
+		}
+	}
+	if headerValue == "" {
+		t.Fatalf("GitEnv() missing basic auth header, got env: %v", env)
+	}
+}
+
 func TestRepoRecloneReason(t *testing.T) {
 	t.Parallel()
 

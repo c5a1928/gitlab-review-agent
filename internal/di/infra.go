@@ -13,6 +13,11 @@ import (
 
 var InfraPackage = do.Package(
 	do.Lazy(provideStores),
+	do.Lazy(provideRepositorySettingsStore),
+	do.Lazy(provideReviewJobStore),
+	do.Lazy(provideReplyJobStore),
+	do.Lazy(provideFeedbackStore),
+	do.Lazy(provideReviewRecordStore),
 	do.Lazy(provideGitLabClient),
 	do.Lazy(provideGitManager),
 	do.Lazy(provideJobQueue),
@@ -20,19 +25,32 @@ var InfraPackage = do.Package(
 
 func provideStores(i do.Injector) (*store.Stores, error) {
 	cfg := do.MustInvoke[*config.Config](i)
-	stores, err := store.New(cfg.Store)
-	if err != nil {
-		return nil, err
-	}
+	return store.New(cfg.Store)
+}
 
-	// Register individual store interfaces for direct injection
-	do.ProvideValue[domain.RepositorySettingsStore](i, stores.RepoSettings)
-	do.ProvideValue[domain.ReviewJobStore](i, stores.ReviewJobs)
-	do.ProvideValue[domain.ReplyJobStore](i, stores.ReplyJobs)
-	do.ProvideValue[domain.FeedbackStore](i, stores.Feedbacks)
-	do.ProvideValue[domain.ReviewRecordStore](i, stores.ReviewRecords)
+func provideRepositorySettingsStore(i do.Injector) (domain.RepositorySettingsStore, error) {
+	stores := do.MustInvoke[*store.Stores](i)
+	return stores.RepoSettings, nil
+}
 
-	return stores, nil
+func provideReviewJobStore(i do.Injector) (domain.ReviewJobStore, error) {
+	stores := do.MustInvoke[*store.Stores](i)
+	return stores.ReviewJobs, nil
+}
+
+func provideReplyJobStore(i do.Injector) (domain.ReplyJobStore, error) {
+	stores := do.MustInvoke[*store.Stores](i)
+	return stores.ReplyJobs, nil
+}
+
+func provideFeedbackStore(i do.Injector) (domain.FeedbackStore, error) {
+	stores := do.MustInvoke[*store.Stores](i)
+	return stores.Feedbacks, nil
+}
+
+func provideReviewRecordStore(i do.Injector) (domain.ReviewRecordStore, error) {
+	stores := do.MustInvoke[*store.Stores](i)
+	return stores.ReviewRecords, nil
 }
 
 func provideGitLabClient(i do.Injector) (domain.GitLabClient, error) {
