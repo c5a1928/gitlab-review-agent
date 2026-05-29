@@ -189,7 +189,8 @@ func (p *Pipeline) Execute(ctx context.Context, job *domain.ReviewJob) error {
 			continue
 		}
 
-		body := FormatComment(c, lang)
+		snippet := SnippetAtLine(ctx, p.gitManager, job.GitLabProjectID, job.HeadSHA, c.FilePath, c.LineNumber)
+		body := FormatComment(c, snippet)
 		resp, err := p.gitlabClient.PostInlineComment(ctx, domain.PostInlineCommentRequest{
 			ProjectID: job.GitLabProjectID,
 			MrIID:     job.MrIID,
@@ -239,9 +240,10 @@ func (p *Pipeline) Execute(ctx context.Context, job *domain.ReviewJob) error {
 		log.Info("auto-resolved fixed threads", "count", resolved)
 	}
 
-	summary := buildSummaryComment(posted, suppressed, len(comments), resolved, aggregated, llmClient.ModelName(), lang)
-	if _, err := p.gitlabClient.PostThreadComment(ctx, job.GitLabProjectID, job.MrIID, summary); err != nil {
-		log.Warn("failed to post summary comment", "error", err)
+	if summary := buildSummaryComment(posted, len(comments)); summary != "" {
+		if _, err := p.gitlabClient.PostThreadComment(ctx, job.GitLabProjectID, job.MrIID, summary); err != nil {
+			log.Warn("failed to post summary comment", "error", err)
+		}
 	}
 
 	if err := p.jobStore.UpdateCompleted(ctx, job.ID, posted, suppressed); err != nil {
@@ -552,58 +554,11 @@ func formatDiffStat(files []domain.DiffFile) string {
 	return sb.String()
 }
 
-func FormatComment(c *domain.ParsedComment, lang prompt.ResponseLanguage) string {
-	badge := SeverityBadge(c.Severity)
-	comment := fmt.Sprintf("%s **[%s]** %s", badge, strings.ToUpper(string(c.Category)), c.ReviewComment)
-	if c.Suggestion != "" {
-		comment += fmt.Sprintf("\n\n💡 **%s**\n```suggestion\n%s\n```", prompt.SuggestionLabel(lang), c.Suggestion)
+func buildSummaryComment(posted, total int) string {
+	if posted == 0 && total == 0 {
+		return "LGTM :8ball:"
 	}
-	return comment
-}
-
-func SeverityBadge(s domain.CommentSeverity) string {
-	switch s {
-	case domain.SeverityCritical:
-		return "🔴 `CRITICAL`"
-	case domain.SeverityHigh:
-		return "🟠 `HIGH`"
-	case domain.SeverityMedium:
-		return "🟡 `MEDIUM`"
-	default:
-		return "🔵 `LOW`"
-	}
-}
-
-func buildSummaryComment(posted, suppressed, total, resolved int, result *aggregatedResult, model string, lang prompt.ResponseLanguage) string {
-	var sb strings.Builder
-	sb.WriteString("## AI Review Summary\n\n")
-
-	if total == 0 {
-		sb.WriteString(prompt.SummaryLGTM())
-	} else if posted == 0 && suppressed > 0 {
-		sb.WriteString(prompt.SummaryAllFiltered(lang, suppressed))
-	} else {
-		sb.WriteString(prompt.SummaryPostedCount(lang, posted))
-		if suppressed > 0 {
-			sb.WriteString(prompt.SummaryFilteredCount(lang, suppressed))
-		}
-		sb.WriteString("\n")
-	}
-
-	if resolved > 0 {
-		sb.WriteString(prompt.SummaryAutoResolved(lang, resolved))
-	}
-
-	fmt.Fprintf(&sb, "- **Model:** %s\n", model)
-	if result.chunksUsed > 1 {
-		fmt.Fprintf(&sb, "- **Chunks:** %d (parallel map-reduce)\n", result.chunksUsed)
-	}
-	fmt.Fprintf(&sb, "- **Iterations:** %d (stop: %s)\n", result.totalIterations, result.stopReason)
-
-	if posted > 0 {
-		sb.WriteString(prompt.SummaryReplyHint(lang))
-	}
-	return sb.String()
+	return ""
 }
 
 func extractFilePaths(files []domain.DiffFile) []string {
