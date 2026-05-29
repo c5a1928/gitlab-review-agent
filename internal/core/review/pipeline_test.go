@@ -103,3 +103,18 @@ func writeFile(t *testing.T, repoPath, relPath, content string) {
 		t.Fatalf("WriteFile(%s) error = %v", relPath, err)
 	}
 }
+
+func TestBuildSummaryComment(t *testing.T) {
+	t.Parallel()
+
+	if got := buildSummaryComment(0, 0); got != "LGTM :8ball:" {
+		t.Fatalf("buildSummaryComment(0, 0) = %q, want %q", got, "LGTM :8ball:")
+	}
+
+	cases := [][2]int{{1, 1}, {0, 2}, {3, 5}}
+	for _, tc := range cases {
+		if got := buildSummaryComment(tc[0], tc[1]); got != "" {
+			t.Fatalf("buildSummaryComment(%d, %d) = %q, want empty", tc[0], tc[1], got)
+		}
+	}
+}

@@ -20,7 +20,6 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	"github.com/antlss/gitlab-review-agent/internal/config"
-	"github.com/antlss/gitlab-review-agent/internal/core/prompt"
 	"github.com/antlss/gitlab-review-agent/internal/core/review"
 	"github.com/antlss/gitlab-review-agent/internal/di"
 	"github.com/antlss/gitlab-review-agent/internal/domain"
@@ -214,12 +213,13 @@ func reviewCmd() *cobra.Command {
 				return nil
 			}
 
-			lang := prompt.ParseLanguage(cfg.Review.ResponseLanguage)
+			gitManager := do.MustInvoke[*git.Manager](injector)
 			fmt.Printf("\nPosting %d comments...\n", len(selectedIndices))
 			posted := 0
 			for _, idx := range selectedIndices {
 				c := &actionable[idx]
-				body := review.FormatComment(c, lang)
+				snippet := review.SnippetAtLine(ctx, gitManager, projectID, updatedJob.HeadSHA, c.FilePath, c.LineNumber)
+				body := review.FormatComment(c, snippet)
 				resp, err := gitlabClient.PostInlineComment(ctx, domain.PostInlineCommentRequest{
 					ProjectID: projectID,
 					MrIID:     mrID,

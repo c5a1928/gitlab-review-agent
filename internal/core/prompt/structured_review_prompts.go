@@ -108,14 +108,14 @@ func StructuredPromptContext(reviewCtx *domain.ReviewContext, includeLanguageGui
 func StrictReviewOutputFormat(lang ResponseLanguage) string {
 	return fmt.Sprintf(`Output exactly:
 === FINAL REVIEW ===
-{"reviews":[{"filePath":"path/to/file.go","lineNumber":42,"reviewComment":"Confirmed production-impact issue.","severity":"high","confidence":"HIGH","category":"logic","suggestion":"// optional concrete fix"}]}
+{"reviews":[{"filePath":"path/to/file.go","lineNumber":42,"reviewComment":"The lookup can return stale permission data after the write succeeds.","severity":"high","confidence":"HIGH","category":"logic"}]}
 
 Field rules:
-- reviewComment must be in %s and must assert a supported issue, not ask the developer to check anything
+- reviewComment must be in %s and must assert a supported issue in plain prose (no severity prefix, no "Confirmed:" prefix)
+- Do not ask the developer to check, verify, confirm, or review something
 - Allowed severity: critical, high, medium, low
 - Prefer medium or higher; use low only when the issue still has real production impact
 - Allowed category: security, bug, logic, performance
-- suggestion is optional and should be concrete when provided
 - If no candidates survive verification, output {"reviews":[]}
 `, lang.Name())
 }
