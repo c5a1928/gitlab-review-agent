@@ -104,10 +104,8 @@ func FormatComment(c *domain.ParsedComment, snippet string) string {
 
 	snippet = strings.TrimSpace(snippet)
 	if snippet != "" {
-		sb.WriteString("snippet:\n")
-		fmt.Fprintf(&sb, "```%s\n%s\n```\n\n", snippetLanguage(c.FilePath), snippet)
-	} else {
 		sb.WriteByte('\n')
+		fmt.Fprintf(&sb, "```%s\n%s\n```\n", snippetLanguage(c.FilePath), snippet)
 	}
 
 	sb.WriteString(normalizeReviewComment(c.ReviewComment))

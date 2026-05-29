@@ -20,10 +20,10 @@ func TestFormatComment(t *testing.T) {
 
 	got := FormatComment(c, "setTimeout(() => this.usedHandoffs.delete(code), 5 * 60 * 1000);")
 	want := "File: `auth/src/session-store.js:67`\n" +
-		"snippet:\n" +
+		"\n" +
 		"```javascript\n" +
 		"setTimeout(() => this.usedHandoffs.delete(code), 5 * 60 * 1000);\n" +
-		"```\n\n" +
+		"```\n" +
 		"The usedHandoffs Set in markHandoffUsed can grow without bound."
 
 	if got != want {
