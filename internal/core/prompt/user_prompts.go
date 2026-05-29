@@ -48,3 +48,62 @@ func SuggestionLabel(lang ResponseLanguage) string {
 		return "Suggested fix:"
 	}
 }
+
+func SummaryLGTM() string {
+	return "✅ **LGTM**.\n\n"
+}
+
+func SummaryAllFiltered(lang ResponseLanguage, count int) string {
+	switch lang {
+	case LangVI:
+		return fmt.Sprintf("✅ **Không có comment nào được đăng.** AI phát hiện %d vấn đề tiềm năng nhưng tất cả đã bị lọc (ví dụ: độ tin cậy thấp, trùng lặp, không đủ ảnh hưởng production, hoặc không actionable).\n\n", count)
+	case LangJA:
+		return fmt.Sprintf("✅ **コメントは投稿されませんでした。** AIが%d件の潜在的な問題を検出しましたが、すべてフィルタリングされました（低信頼度、重複、本番影響不足、または非アクショナブルなど）。\n\n", count)
+	default:
+		return fmt.Sprintf("✅ **No comments posted.** AI found %d potential issues but all were filtered (for example low confidence, duplicate, non-production, or non-actionable).\n\n", count)
+	}
+}
+
+func SummaryPostedCount(lang ResponseLanguage, count int) string {
+	switch lang {
+	case LangVI:
+		return fmt.Sprintf("- **Vấn đề đã đăng:** %d\n", count)
+	case LangJA:
+		return fmt.Sprintf("- **投稿された問題:** %d\n", count)
+	default:
+		return fmt.Sprintf("- **Issues posted:** %d\n", count)
+	}
+}
+
+func SummaryFilteredCount(lang ResponseLanguage, count int) string {
+	switch lang {
+	case LangVI:
+		return fmt.Sprintf("- **Bị lọc:** %d (độ tin cậy thấp, trùng lặp, không đủ ảnh hưởng production, hoặc không actionable)\n", count)
+	case LangJA:
+		return fmt.Sprintf("- **フィルタリング:** %d（低信頼度、重複、本番影響不足、または非アクショナブル）\n", count)
+	default:
+		return fmt.Sprintf("- **Filtered:** %d (low confidence, duplicate, non-production, or non-actionable)\n", count)
+	}
+}
+
+func SummaryAutoResolved(lang ResponseLanguage, count int) string {
+	switch lang {
+	case LangVI:
+		return fmt.Sprintf("- **Auto-resolved:** %d (vấn đề trước đã được sửa trong commit mới)\n", count)
+	case LangJA:
+		return fmt.Sprintf("- **自動解決:** %d（以前のコミットで修正された問題）\n", count)
+	default:
+		return fmt.Sprintf("- **Auto-resolved:** %d (previously flagged issues fixed in new commit)\n", count)
+	}
+}
+
+func SummaryReplyHint(lang ResponseLanguage) string {
+	switch lang {
+	case LangVI:
+		return "\nReply vào bất kỳ comment nào để thảo luận. Bot sẽ phản hồi với đầy đủ context."
+	case LangJA:
+		return "\nコメントに返信して議論できます。ボットが完全なコンテキストで応答します。"
+	default:
+		return "\nReply to any comment to discuss. Bot will respond with full context."
+	}
+}

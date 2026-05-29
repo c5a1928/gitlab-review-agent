@@ -5,7 +5,7 @@ services:
     build: .
     container_name: ai_review_agent
     ports:
-      - "8020:8080"
+      - "8080:8080"
     volumes:
       # Mount local data directory for persistent SQLite/File storage
       - ./data:/app/data
